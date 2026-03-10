@@ -10,7 +10,7 @@ from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 from sklearn.metrics import roc_auc_score, f1_score
 from src.data_processing import load_data, handle_outliers, optimize_memory, prepare_data
-
+from sklearn.model_selection import train_test_split
 
 MODELS = {
     "RandomForest": RandomForestClassifier(
@@ -67,9 +67,11 @@ if __name__ == "__main__":
     df = load_data("data/heart_failure_clinical_records_dataset.csv")
     df = handle_outliers(df)
     df = optimize_memory(df)
-    X_train, X_test, y_train, y_test = prepare_data(df)
+    X=df.drop(columns=["DEATH_EVEN"])
+    y=df["DEATH_EVEN"]
+    X_train, X_test,y_train,y_test =train_test_split(X,y,test_size=0.3 , random_state=42,stratify=y)
 
     trained_models = train_all_models(X_train, y_train)
     best_name, best_model = select_best_model(trained_models, X_test, y_test)
     save_model(best_model)
-    print("\nEntraînement terminé ✓")
+    print("\nEntraînement terminé")
