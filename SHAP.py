@@ -3,74 +3,58 @@ SHAP Explainability Module
 Generates SHAP values and visualizations for heart failure prediction model.
 """
 
+import os
 import shap
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend for saving plots
-import os
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 
-def get_shap_explainer(model, X_train: np.ndarray):
+# ── Explainer ─────────────────────────────────────────────────────────────────
+
+def get_shap_explainer(model, X_train):
     """
-    Create the appropriate SHAP explainer based on model type.
-    - TreeExplainer for tree-based models (RF, XGBoost, LightGBM)
-    - LinearExplainer for Logistic Regression
+    Crée le bon explainer SHAP selon le type de modèle.
+    - TreeExplainer  → RandomForest, XGBoost, LightGBM
+    - LinearExplainer → LogisticRegression (si ajouté plus tard)
     """
-    model_name = type(model).__name__.lower()
-
-    if any(name in model_name for name in ["forest", "xgb", "lgbm", "gradient", "tree"]):
-        explainer = shap.TreeExplainer(model)
-    else:
-        # Logistic Regression or other linear models
-        explainer = shap.LinearExplainer(model, X_train)
-
-    return explainer
+    name = type(model).__name__.lower()
+    if any(k in name for k in ["forest", "xgb", "lgbm", "gradient", "tree"]):
+        return shap.TreeExplainer(model)
+    return shap.LinearExplainer(model, X_train)
 
 
-def compute_shap_values(explainer, X: np.ndarray):
+# ── Calcul des SHAP values ────────────────────────────────────────────────────
+
+def compute_shap_values(explainer, X):
     """
-    Compute SHAP values for a given dataset.
-    Returns raw shap_values array.
+    Calcule les SHAP values.
+    Retourne un array 2D (n_samples, n_features) — toujours pour la classe 1.
     """
     shap_values = explainer.shap_values(X)
-
-    # For binary classification, tree models return a list [class0, class1]
-    # We want class 1 (positive = heart failure death)
+    # RandomForest/LightGBM retournent une liste [classe0, classe1]
     if isinstance(shap_values, list):
         shap_values = shap_values[1]
-
     return shap_values
 
 
+# ── Plots globaux (sur tout le dataset d'entraînement) ────────────────────────
+
 def plot_summary(shap_values, X, feature_names: list, save_path: str = None):
-    """
-    SHAP Summary Plot (Beeswarm) — shows feature importance and impact direction.
-    """
+    """Beeswarm plot — impact de chaque feature sur l'ensemble des prédictions."""
     plt.figure()
-    shap.summary_plot(
-        shap_values,
-        X,
-        feature_names=feature_names,
-        show=False,
-        plot_size=(10, 6)
-    )
-    plt.title("SHAP Summary Plot — Feature Impact on Heart Failure Prediction", pad=12)
+    shap.summary_plot(shap_values, X, feature_names=feature_names,
+                      show=False, plot_size=(10, 6))
+    plt.title("SHAP Summary Plot — Impact des features sur le risque", pad=12)
     plt.tight_layout()
-
-    if save_path:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        print(f"[SHAP] Summary plot saved → {save_path}")
-
+    _save(save_path, "Summary plot")
     plt.close()
 
 
 def plot_bar_importance(shap_values, feature_names: list, save_path: str = None):
-    """
-    SHAP Bar Plot — global feature importance (mean |SHAP value|).
-    """
-    mean_abs = np.abs(shap_values).mean(axis=0)
+    """Bar plot — importance globale (mean |SHAP value|)."""
+    mean_abs   = np.abs(shap_values).mean(axis=0)
     sorted_idx = np.argsort(mean_abs)[::-1]
 
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -80,101 +64,94 @@ def plot_bar_importance(shap_values, feature_names: list, save_path: str = None)
         color="#c0392b"
     )
     ax.invert_yaxis()
-    ax.set_xlabel("Mean |SHAP Value| (average impact on model output)")
-    ax.set_title("Global Feature Importance — SHAP")
+    ax.set_xlabel("Mean |SHAP Value|")
+    ax.set_title("Importance globale des features — SHAP")
     ax.bar_label(bars, fmt="%.4f", padding=3, fontsize=8)
     plt.tight_layout()
-
-    if save_path:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        print(f"[SHAP] Bar importance plot saved → {save_path}")
-
+    _save(save_path, "Bar importance")
     plt.close()
 
 
-def plot_waterfall_single(explainer, X_single, feature_names: list, save_path: str = None):
-    """
-    SHAP Waterfall Plot for a single patient prediction.
-    Shows which features push the prediction higher or lower.
+# ── Plot individuel (un seul patient) ────────────────────────────────────────
 
-    X_single : 1D array or DataFrame row (single patient)
+def plot_waterfall_single(explainer, X_patient, feature_names: list, save_path: str = None):
     """
-    # shap.Explanation object needed for waterfall
-    shap_explanation = explainer(X_single)
+    Waterfall plot pour UN patient.
+    X_patient : DataFrame d'une ligne (comme renvoyé par l'interface Streamlit).
+    """
+    exp = explainer(X_patient)
 
-    # Handle binary classification list output
-    if shap_explanation.values.ndim == 3:
-        # shape (1, n_features, n_classes) → take class 1
-        vals = shap_explanation.values[0, :, 1]
-        base = shap_explanation.base_values[0, 1]
-    elif shap_explanation.values.ndim == 2 and shap_explanation.values.shape[-1] == 2:
-        vals = shap_explanation.values[0, 1] if shap_explanation.values.ndim == 2 else shap_explanation.values[:, 1]
-        base = shap_explanation.base_values[0] if np.ndim(shap_explanation.base_values) > 1 else shap_explanation.base_values
+    # Normalisation pour classification binaire
+    if exp.values.ndim == 3:
+        vals = exp.values[0, :, 1]
+        base = float(exp.base_values[0, 1])
+    elif exp.values.ndim == 2 and exp.values.shape[-1] == 2:
+        vals = exp.values[0, 1]
+        base = float(exp.base_values[0])
     else:
-        vals = shap_explanation.values[0] if shap_explanation.values.ndim > 1 else shap_explanation.values
-        base = shap_explanation.base_values[0] if np.ndim(shap_explanation.base_values) > 0 else shap_explanation.base_values
+        vals = exp.values[0] if exp.values.ndim > 1 else exp.values
+        base = float(exp.base_values[0]) if np.ndim(exp.base_values) > 0 else float(exp.base_values)
+
+    data = X_patient.values.flatten() if hasattr(X_patient, "values") else np.array(X_patient).flatten()
 
     explanation = shap.Explanation(
         values=vals,
-        base_values=float(np.mean(base)) if np.ndim(base) > 0 else float(base),
-        data=X_single.values.flatten() if hasattr(X_single, "values") else np.array(X_single).flatten(),
+        base_values=base,
+        data=data,
         feature_names=feature_names
     )
 
     plt.figure()
     shap.waterfall_plot(explanation, show=False, max_display=12)
-    plt.title("SHAP Waterfall — Individual Patient Explanation", pad=10)
+    plt.title("SHAP Waterfall — Explication individuelle patient", pad=10)
     plt.tight_layout()
-
-    if save_path:
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path, dpi=150, bbox_inches="tight")
-        print(f"[SHAP] Waterfall plot saved → {save_path}")
-
+    _save(save_path, "Waterfall plot")
     plt.close()
 
 
+# ── Utilitaires ───────────────────────────────────────────────────────────────
+
 def get_top_features(shap_values, feature_names: list, top_n: int = 5) -> list:
     """
-    Returns the top N most important features based on mean |SHAP value|.
-    Useful for displaying insights in the Streamlit interface.
-
-    Returns: list of (feature_name, mean_abs_shap) tuples, sorted descending.
+    Retourne les top_n features les plus importantes (mean |SHAP|).
+    Retourne : liste de tuples (nom_feature, score).
     """
-    mean_abs = np.abs(shap_values).mean(axis=0)
+    mean_abs   = np.abs(shap_values).mean(axis=0)
     sorted_idx = np.argsort(mean_abs)[::-1]
     return [(feature_names[i], round(float(mean_abs[i]), 4)) for i in sorted_idx[:top_n]]
 
 
-def explain_patient(model, explainer, shap_values_train, X_patient,
-                    feature_names: list, save_dir: str = "outputs/shap"):
+def explain_patient(model, explainer, X_patient, feature_names: list,
+                    save_dir: str = "outputs/shap") -> dict:
     """
-    Full explanation pipeline for a single patient:
-    1. Compute prediction probability
-    2. Generate waterfall plot
-    3. Return top contributing features
+    Pipeline complet d'explication pour un patient :
+    1. Probabilité de décès
+    2. Waterfall plot sauvegardé
+    3. Top 5 features contributives
 
-    Returns dict with: probability, top_features, waterfall_path
+    Retourne : dict {probability, top_features, waterfall_path}
     """
+    os.makedirs(save_dir, exist_ok=True)
     prob = model.predict_proba(X_patient)[0][1]
 
     waterfall_path = os.path.join(save_dir, "patient_waterfall.png")
     plot_waterfall_single(explainer, X_patient, feature_names, save_path=waterfall_path)
 
-    # Per-patient SHAP values
     patient_shap = compute_shap_values(explainer, X_patient)
     if patient_shap.ndim > 1:
         patient_shap = patient_shap[0]
 
-    top = sorted(
-        zip(feature_names, patient_shap),
-        key=lambda x: abs(x[1]),
-        reverse=True
-    )[:5]
+    top = sorted(zip(feature_names, patient_shap), key=lambda x: abs(x[1]), reverse=True)[:5]
 
     return {
-        "probability": round(float(prob), 4),
-        "top_features": [(name, round(float(val), 4)) for name, val in top],
-        "waterfall_path": waterfall_path
+        "probability" : round(float(prob), 4),
+        "top_features": [(n, round(float(v), 4)) for n, v in top],
+        "waterfall_path": waterfall_path,
     }
+
+
+def _save(path, label):
+    if path:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        plt.savefig(path, dpi=150, bbox_inches="tight")
+        print(f"[SHAP] {label} sauvegardé → {path}")
