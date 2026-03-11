@@ -16,7 +16,7 @@ from sklearn.datasets import make_classification
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from src.shap_explainability import (
+from src.SHAP import (
     get_shap_explainer,
     compute_shap_values,
     get_top_features,

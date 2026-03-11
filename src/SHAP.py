@@ -31,11 +31,20 @@ def compute_shap_values(explainer, X):
     """
     Calcule les SHAP values.
     Retourne un array 2D (n_samples, n_features) — toujours pour la classe 1.
+    Gère les 3 formats possibles selon la version de SHAP/sklearn :
+      - list [classe0, classe1]     → ancien RandomForest/LightGBM
+      - array 3D (n, features, 2)   → nouveau sklearn RandomForest
+      - array 2D (n, features)      → XGBoost / déjà correct
     """
     shap_values = explainer.shap_values(X)
-    # RandomForest/LightGBM retournent une liste [classe0, classe1]
+
     if isinstance(shap_values, list):
+        # Ancien format : liste [classe0, classe1]
         shap_values = shap_values[1]
+    elif isinstance(shap_values, np.ndarray) and shap_values.ndim == 3:
+        # Nouveau format sklearn : (n_samples, n_features, n_classes)
+        shap_values = shap_values[:, :, 1]
+
     return shap_values
 
 
