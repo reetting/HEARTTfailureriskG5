@@ -225,7 +225,7 @@ def main():
         st.markdown("### 📋 Dossier du Patient")
         st.markdown("Veuillez ajuster les constantes cliniques :")
         
-        age = st.slider("Âge (années)", 40, 95, 60)
+        age = st.slider("Âge (années)", 10, 95, 60)
         ejection_fraction = st.slider("Fraction d'éjection (%)", 14, 80, 38)
         
         st.markdown("---")
