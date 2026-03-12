@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("Agg")
 import plotly.graph_objects as go
-import shap
+from SHAP import get_shap_explainer, compute_shap_values, plot_waterfall_single, get_top_features
 import seaborn as sns
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -237,45 +237,6 @@ def risk_gauge(probability: float) -> go.Figure:
         plot_bgcolor="rgba(0,0,0,0)"
     )
     return fig
-
-def shap_plot(model, X_train: pd.DataFrame) -> plt.Figure:
-    explainer   = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_train)
-
-    if isinstance(shap_values, list):
-        shap_values = shap_values[1]
-
-    mean_shap = np.abs(shap_values).mean(axis=0)
-
-    fr_feature_names = {
-        "age": "Âge", "anaemia": "Anémie", "creatinine_phosphokinase": "Enzyme CPK",
-        "diabetes": "Diabète", "ejection_fraction": "Fraction d'éjection", 
-        "high_blood_pressure": "Hypertension", "platelets": "Plaquettes",
-        "serum_creatinine": "Créatinine sérique", "serum_sodium": "Sodium sérique", 
-        "sex": "Sexe", "smoking": "Fumeur", "time": "Période de suivi"
-    }
-
-    importance_df = pd.DataFrame({
-        "Feature":[fr_feature_names.get(f, f) for f in FEATURE_NAMES],
-        "Importance": mean_shap
-    }).sort_values("Importance", ascending=True)
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.barh(importance_df["Feature"], importance_df["Importance"], color="#3498DB", edgecolor="none", height=0.6)
-    ax.set_xlabel("Impact moyen sur la prédiction (Valeur SHAP absolue)", fontsize=11, color="#34495E")
-    
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.spines["left"].set_color("#BDC3C7")
-    ax.spines["bottom"].set_color("#BDC3C7")
-    ax.tick_params(axis='x', colors='#7F8C8D')
-    ax.tick_params(axis='y', colors='#2C3E50', labelsize=10)
-    ax.grid(axis='x', linestyle='--', alpha=0.3)
-    
-    fig.patch.set_alpha(0)
-    plt.tight_layout()
-    return fig
-
 # ==========================================
 # 4. INTERFACE UTILISATEUR : EN-TÊTE
 # ==========================================
