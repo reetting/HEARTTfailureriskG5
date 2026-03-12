@@ -1,3 +1,5 @@
+import os 
+import sys
 """
 app.py — Interface Streamlit pour Heart Failure Risk Predictor
 Corrections :
@@ -15,8 +17,6 @@ import matplotlib
 matplotlib.use("Agg")
 import plotly.graph_objects as go
 import shap  # import global, pas dans la fonction
-import os
-import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from src.data_processing import load_data, handle_outliers, optimize_memory
