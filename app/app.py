@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="shap")
 warnings.filterwarnings("ignore", message=".*use_container_width.*")
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from SHAP import get_shap_explainer, compute_shap_values, plot_waterfall_single, get_top_features
+from src.SHAP import get_shap_explainer, compute_shap_values, plot_waterfall_single, get_top_features
 """
 app.py — Interface Streamlit pour CardioCare AI
 Design professionnel + Glassmorphism + Fonds Animés + Traduction FR
@@ -32,7 +32,6 @@ from sklearn.metrics import accuracy_score, roc_auc_score, f1_score, confusion_m
 # 1. CONFIGURATION & CSS PERSONNALISÉ + ANIMATIONS
 # ==========================================
 st.set_page_config(
-    page_title="CardioCare AI",
     page_title="CardioCare AI",
     page_icon="🫀",
     layout="wide",
