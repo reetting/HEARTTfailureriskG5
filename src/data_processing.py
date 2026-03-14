@@ -33,3 +33,21 @@ def handle_outliers(df):
     upper_bound = Q3 + 1.5 * IQR
     df = df.clip(lower=lower_bound, upper=upper_bound, axis=1)
     return df
+from sklearn.model_selection import train_test_split
+
+def prepare_data(df):
+
+    # séparation features / target
+    X = df.drop("death_event", axis=1)
+    y = df["death_event"]
+
+    # division train/test
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=42,
+        stratify=y
+    )
+
+    return X_train, X_test, y_train, y_test
