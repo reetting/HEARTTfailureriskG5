@@ -519,6 +519,19 @@ elif st.session_state.current_page == "dashboard":
                 st.session_state.current_page = "shap"
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown('espace', unsafe_allow_html=True)
+            if st.button('Telecharger le rapport PDF', use_container_width=True):
+                pdf_path = generate_pdf_report(
+                    st.session_state.patient_data,
+                    st.session_state.proba
+                )
+                with open(pdf_path, 'rb') as f:
+                    st.download_button(
+                        label='Cliquer pour telecharger',
+                        data=f,
+                        file_name='cardiocare_rapport.pdf',
+                        mime='application/pdf',
+                        use_container_width=True
 
 # ==========================================
 # 8. VUE 3 : EXPLICABILITÉ SHAP
