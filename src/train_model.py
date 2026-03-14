@@ -72,4 +72,4 @@ if __name__ == "__main__":
     trained_models = train_all_models(X_train, y_train)
     best_name, best_model = select_best_model(trained_models, X_test, y_test)
     save_model(best_model)
-    print("\nEntraînement terminé ✓")
+    print("\nEntraînement terminé ✓"
