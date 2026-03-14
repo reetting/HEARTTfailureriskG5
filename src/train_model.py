@@ -64,16 +64,6 @@ def load_model(path: str = "models/best_model.pkl"):
         return pickle.load(f)
 
 
-if __name__ == "__main__":
-    df = load_data("data/heart_failure_clinical_records_dataset.csv")
-    df = handle_outliers(df)
-    df = optimize_memory(df)
-    X_train, X_test, y_train, y_test = prepare_data(df)
-
-    trained_models = train_all_models(X_train, y_train)
-    best_name, best_model = select_best_model(trained_models, X_test, y_test)
-    save_model(best_model)
-    print("\nEntraînement terminé ✓")
 
 
 def optimize_lightgbm(X_train, y_train):
@@ -142,3 +132,27 @@ def optimize_lightgbm(X_train, y_train):
     print(f"\nMeilleur Recall (Cross Validation) : {grid_search.best_score_:.4f}")
 
     return grid_search.best_estimator_
+
+
+if __name__ == "__main__":
+    df = load_data("data/heart_failure_clinical_records_dataset.csv")
+    df = handle_outliers(df)
+    df = optimize_memory(df)
+
+    X_train, X_test, y_train, y_test = prepare_data(df)
+
+    # entraîner les modèles classiques
+    trained_models = train_all_models(X_train, y_train)
+
+    # ajouter le modèle LightGBM optimisé
+    print("\nOptimisation de LightGBM avec GridSearch...")
+    optimized_lgbm = optimize_lightgbm(X_train, y_train)
+
+    trained_models["LightGBM_Optimized"] = optimized_lgbm
+
+    # comparaison des modèles
+    best_name, best_model = select_best_model(trained_models, X_test, y_test)
+
+    save_model(best_model)
+
+    print("\nEntraînement terminé ✓")
