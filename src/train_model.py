@@ -84,3 +84,32 @@ def compare_base_vs_balanced(X_train, X_test, y_train, y_test):
         print(f"║ {name:<12} {score_base:>10.4f} {score_bal:>12.4f} {signe}{diff:>7.4f} ║")
 
     print("╚══════════════════════════════════════════════════╝")
+def ensemble_averaging(trained_models, X_test, y_test):
+   """
+  Combine les 3 modeles par moyenne des probabilites.
+  Compare le resultat avec LightGBM seul.
+    """
+   proba_rf = trained_models['RandomForest'].predict_proba(X_test)[:, 1]
+   proba_xgb = trained_models['XGBoost'].predict_proba(X_test)[:, 1]
+   proba_lgbm = trained_models['LightGBM'].predict_proba(X_test)[:, 1]
+   # Moyenne des probabilites
+   proba_ensemble = (proba_rf + proba_xgb + proba_lgbm) / 3
+y_pred_ensemble = (proba_ensemble >= 0.5).astype(int)
+lgbm_pred = trained_models['LightGBM'].predict(X_test)
+print('\n ENSEMBLE AVERAGING vs LightGBM seul')
+print(f"{'Metrique':<12} {'LightGBM':>10} {'Ensemble':>10} {'Diff':>8}")
+print('-' * 45)
+metrics = {
+'Recall': (recall_score, lgbm_pred, y_pred_ensemble),
+'Precision': (precision_score, lgbm_pred, y_pred_ensemble),
+'ROC-AUC': (roc_auc_score, proba_lgbm, proba_ensemble),
+'F1-Score': (f1_score, lgbm_pred, y_pred_ensemble),
+'Accuracy': (accuracy_score, lgbm_pred, y_pred_ensemble),
+}
+for name, (fn, lgbm_val, ens_val) in metrics.items():
+s_lgbm = fn(y_test, lgbm_val)
+s_ens = fn(y_test, ens_val)
+diff = s_ens - s_lgbm
+signe = '+' if diff >= 0 else ''
+print(f"{name:<12} {s_lgbm:>10.4f} {s_ens:>10.4f} {signe}{diff:>7.4f}")
+return proba_ensemble, y_pred_ensemble

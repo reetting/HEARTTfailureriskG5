@@ -27,3 +27,4 @@ ucimlrepo
 altair
 streamlit>=1.30.0
 fpdf2
+fpdf 

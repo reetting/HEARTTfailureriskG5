@@ -72,7 +72,7 @@ def get_test_data():
     X, y = df[FEATURE_NAMES], df["DEATH_EVENT"]
     return train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 def generate_pdf_report(patient: dict, proba: float) -> str:
-risk_label = (
+    risk_label = (
     "RISQUE CRITIQUE" if proba >= 0.65 else
     "RISQUE MODERE"   if proba >= 0.40 else
     "RISQUE FAIBLE"
@@ -393,7 +393,6 @@ with nav4:
 
 st.markdown("<div style='margin-bottom:40px;'></div>", unsafe_allow_html=True)
 st.markdown("<div class='page-animate'>", unsafe_allow_html=True)
-
 # ==========================================
 # 6. VUE 1 : BILAN PATIENT
 # ==========================================
@@ -531,7 +530,7 @@ elif st.session_state.current_page == "dashboard":
                         data=f,
                         file_name='cardiocare_rapport.pdf',
                         mime='application/pdf',
-                        use_container_width=True
+                        use_container_width=True)
 
 # ==========================================
 # 8. VUE 3 : EXPLICABILITÉ SHAP
