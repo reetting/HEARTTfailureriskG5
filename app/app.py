@@ -71,6 +71,13 @@ def get_test_data():
     df = optimize_memory(df)
     X, y = df[FEATURE_NAMES], df["DEATH_EVENT"]
     return train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+MODELS_RESULTS = {
+    "Random Forest":       {"Recall": 0.6316, "Precision": 0.8571, "ROC-AUC": 0.9072, "F1-Score": 0.7273, "Accuracy": 0.8500},
+    "XGBoost":             {"Recall": 0.5789, "Precision": 0.8462, "ROC-AUC": 0.8238, "F1-Score": 0.6875, "Accuracy": 0.8333},
+    "LightGBM":            {"Recall": 0.6842, "Precision": 0.8667, "ROC-AUC": 0.8652, "F1-Score": 0.7647, "Accuracy": 0.8667},
+    "LightGBM Equilibre":  {"Recall": 0.9512, "Precision": 0.8864, "ROC-AUC": 0.9780, "F1-Score": 0.9176, "Accuracy": 0.9146},
+    "Ensemble Averaging":  {"Recall": 0.8947, "Precision": 0.9444, "ROC-AUC": 0.9769, "F1-Score": 0.9189, "Accuracy": 0.9500},
+}
 def generate_pdf_report(patient: dict, proba: float) -> str:
     risk_label = (
     "RISQUE CRITIQUE" if proba >= 0.65 else
@@ -363,7 +370,7 @@ st.markdown("""
     </h1>
 """, unsafe_allow_html=True)
 
-nav1, nav2, nav3, nav4 = st.columns(4)
+nav1, nav2, nav3, nav4 = st.columns(5)
 def nav_class(page): return "nav-active nav-container" if st.session_state.current_page == page else "nav-container"
 
 with nav1:
@@ -388,6 +395,12 @@ with nav4:
     st.markdown(f"<div class='{nav_class('perf')}'>", unsafe_allow_html=True)
     if st.button("4. Fiabilité IA", use_container_width=True):
         st.session_state.current_page = "perf"
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+with nav5:
+    st.markdown(f"<div class='{nav_class('comparaison')}'>", unsafe_allow_html=True)
+    if st.button("5. Comparaison", use_container_width=True):
+        st.session_state.current_page = "comparaison"
         st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -630,6 +643,7 @@ elif st.session_state.current_page == "perf":
     st.markdown("<br>", unsafe_allow_html=True)
 
     c_conf1, c_conf2 = st.columns([1, 2])
+
     with c_conf2:
         with st.container(border=True):
             st.markdown("<h4 class='accent-text'>📊 Matrice de Confusion</h4>", unsafe_allow_html=True)
@@ -645,6 +659,31 @@ elif st.session_state.current_page == "perf":
             ax.set_yticklabels(ax.get_yticklabels(), rotation=0, color="#2C3E50", weight="bold")
             ax.set_xticklabels(ax.get_xticklabels(), color="#2C3E50", weight="bold")
             st.pyplot(fig_cm, transparent=True, use_container_width=True)
+elif st.session_state.current_page == "comparaison":
+    st.markdown("### 📊 Comparaison des Modèles")
+    st.markdown("<p class='sub-text'>Performances comparées de tous les modèles testés.</p>",
+                unsafe_allow_html=True)
+
+    metrics_order = ["Recall", "Precision", "ROC-AUC", "F1-Score", "Accuracy"]
+    rows = []
+    for model_name, scores in MODELS_RESULTS.items():
+        row = [model_name] + [f"{scores[m]:.4f}" for m in metrics_order]
+        rows.append(row)
+
+    df_compare = pd.DataFrame(rows, columns=["Modèle"] + metrics_order)
+    st.dataframe(df_compare, use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+    st.markdown(f"""
+        <div class='custom-card' style='border-left:6px solid #27AE60;'>
+            <h4 style='color:#27AE60;'>✅ Modèle choisi : LightGBM Equilibre</h4>
+            <p style='color:#2C3E50;'>
+                Meilleur Recall (0.9512) et meilleur ROC-AUC (0.9780).<br/>
+                Dans un contexte médical, le Recall est la métrique prioritaire
+                car rater un patient en danger est plus grave qu'une fausse alarme.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
 
 # ==========================================
 # 10. PIED DE PAGE

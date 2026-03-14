@@ -3,7 +3,7 @@ import os
 import pickle
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.train_model import MODELS,train_all_models,compare_base_vs_balanced
+from src.train_model import MODELS,train_all_models,compare_base_vs_balanced,ensemble_averaging
 from src.data_processing import load_data, handle_outliers, optimize_memory
 from sklearn.metrics import roc_auc_score, f1_score
 from sklearn.model_selection import train_test_split
@@ -44,8 +44,6 @@ def load_model(path: str = "models/best_model.pkl"):
         return pickle.load(f)
 
 
-
-
 if __name__ == "__main__":
     # Chargement et preprocessing
     df = load_data("data/heart_failure_clinical_records_dataset.csv")
@@ -68,4 +66,7 @@ if __name__ == "__main__":
     evaluate_all_models(trained_models, X_test, y_test)
     compare_base_vs_balanced(X_train, X_test, y_train, y_test)
     print("\nEntraînement terminé ✓")
+    ensemble_averaging(trained_models, X_test, y_test)
 save_model(trained_models["LightGBM"])
+
+
