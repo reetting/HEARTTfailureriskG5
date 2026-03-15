@@ -177,5 +177,5 @@ Les variables les plus importantes identifiées :
 
 ##  Licence
 
-MIT License — École Centrale Casablanca, Promotion 2028
+— École Centrale Casablanca, Promotion 2028
 
