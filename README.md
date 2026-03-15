@@ -16,7 +16,7 @@ CardioCare AI est une application web qui prédit le risque de décès par insuf
 
 ---
 
-## 👥 Équipe — Groupe 5
+## 👥 Équipe — Groupe 11
 
 | Membre | Rôle |
 |--------|------|
